@@ -52,3 +52,16 @@ If you encounter any **problems working in your IDE**, make sure that it also us
 ## Dependencies
 
 - scikit-learn (0.24.0)
+
+## Data
+
+The data for this project comes from the Pan Shared Task 2019 (only the Authorship attribution Task).
+
+Link to the Shared Task: https://pan.webis.de/clef19/pan19-web/authorship-attribution.html  
+The data was downloaded from there.
+
+*An explanation of the data could go here.*
+
+## Running
+
+*Explanation of how to run the code in this repository.*
