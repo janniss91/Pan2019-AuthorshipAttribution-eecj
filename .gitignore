@@ -1,2 +1,5 @@
 env
 .scribbles/
+
+# Keep all PyCharm data out of this repository.
+.idea/*

@@ -17,12 +17,13 @@ If you want to work on a feature, follow these steps:
 2. Go to your local repository, type ```git checkout master``` and then type: ```git pull```
 3. Create a new feature-branch using: ```git checkout -b your-feature-branch``` (use your desired branch name)
 4. Implement the feature on your local machine
-5. Push the feature branch to github using: ```git push -u origin your-feature-branch```
-6. Create a Pull Request (on Github) that demands to merge your feature branch into master
-7. Assign the merge request to one of the other two developers
+5. Add and commit your changes!
+6. Push the feature branch to github using: ```git push -u origin your-feature-branch```
+7. Create a Pull Request (on Github) that demands to merge your feature branch into master
+8. Assign the merge request to one of the other two developers
 
-8. The other person will check your implementation and comment on it. If things should be improved, you can make more commits on your local repository and then push them using ```git push``` (because the branch is already on github).
-9. Once all problems have been resolved, the other developer can merge the branch into master (there is a button for that in the Pull Request).
+9. The other person will check your implementation and comment on it. If things should be improved, you can make more commits on your local repository and then push them using ```git push``` (because the branch is already on github).
+10. Once all problems have been resolved, the other developer can merge the branch into master (there is a button for that in the Pull Request).
 
 **Important**: If you encounter **merge conflicts** and don't know how to handle them, tell the others.
 
