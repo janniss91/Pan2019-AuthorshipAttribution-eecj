@@ -35,7 +35,7 @@ def tokenize_text(text: str) -> List[str]:
     return tokens
 
 
-def lemmatize_word(tokens: List[str], lang: str) -> List[str]:
+def lemmatize_words(tokens: List[str], lang: str) -> List[str]:
     """
     A list of tokens and the langauge should be given as input.
     lang : english, french, italian and spanish.
@@ -50,9 +50,9 @@ def lemmatize_word(tokens: List[str], lang: str) -> List[str]:
 
 if __name__ == '__main__':
     # Testing
-    test_sentence = "I can't help but think that if you were still alive you would have solved it in minutes, and the victim would still be alive."
+    test_sentence = "I can't help but think that if you were still alive you would have solved it in minutes in the U.S.A., and the victim would still be alive. The bananas cost $4.5, which 77.8% of what apples cost."
     tokens = tokenize_text(test_sentence)
-    lemmas = lemmatize_word(tokens, 'english')
+    lemmas = lemmatize_words(tokens, 'english')
     print(tokens)
     print(lemmas)
 
