@@ -10,7 +10,7 @@ def extract_word_counts():
     This function requires tokenization and lemmatization.
     :return: This should return a numpy array.
     """
-    pass
+    word = "word"
 
 
 def extract_sentence_lengths():
