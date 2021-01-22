@@ -11,7 +11,7 @@ import numpy as np
 
 
 
-def extract_word_counts(sentence,lemm=True):
+def extract_word_counts(sentence,lemm=True,lang="english"):
     """
     This function requires tokenization and lemmatization.
 
