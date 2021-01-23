@@ -13,10 +13,13 @@ def extract_word_counts():
     pass
 
 
-def extract_sentence_lengths():
+def extract_sentence_lengths(text):
     """
     This function requires tokenization and lemmatization.
-    :return: This should return a numpy array.
+    This function also requires a sentence splitting method.
+
+    :return: This should return the lengths of all 
+    sentences in the text as a List of integers
     """
     pass
 
@@ -26,12 +29,56 @@ def extract_sentence_lengths():
 """
 
 
-def combine_features():
+def convert_word_counts():
     """
-    This function should combine the (1d) arrays produced by the functions above
-    into one single (2d) array.
-    The final array can be used as 
-    :return: This should return a numpy array (probably 2d).
+    Find a way to convert the word counts of a text into a meaningful
+    numeric representation that can be used as input to the SVM.
+
+    Maybe this can be a bag-of-words multiple-hot (not one-hot) kind of
+    approach where a long sparse matrix with word counts is used.
+
+    But maybe in order to not have sparsity, we can find a better solution.
+
+    :return: numpy array
     """
     pass
 
+
+def convert_sentence_lengths():
+    """
+    Find a way to convert the sentence lengths of a text into a meaningful
+    numeric representation that can be used as input to the SVM.
+
+    Maybe we can just take the sentence lengths as they are and put
+    them into a numpy array
+
+    :return: numpy array
+    """
+    pass
+
+
+def combine_features_per_text():
+    """
+    This function should combine the arrays produced by the conversion
+    functions above into one single numpy array (representing one text).
+
+    :return: This should return a numpy array.
+    """
+    pass
+
+
+def combine_features_all_texts():
+    """
+    This function should combine all features of all texts into one
+    big numpy array of the shape:
+
+    num_texts * num_total_features
+
+    Also, the function should return the numpy array of candidates,
+    which will be our labels.
+    Shape should be:
+
+    num_texts * 1
+
+    :return: a Tuple of numpy arrays -> (features, labels)
+    """
