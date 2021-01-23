@@ -82,3 +82,4 @@ def combine_features_all_texts():
 
     :return: a Tuple of numpy arrays -> (features, labels)
     """
+    pass
