@@ -3,14 +3,31 @@ Here we should implement multiple functions for feature selection.
 
 Below are some examples of functions that care about single features.
 """
+from collections import Counter
+import text_processing
+import numpy as np
 
-
-def extract_word_counts():
+def extract_word_counts(text,lemm=True,lang="english"):
     """
     This function requires tokenization and lemmatization.
-    :return: This should return a numpy array.
+    text : input text
+    lemm : if lemm is True, do the lemmatization.
+    lang : language of the sentence. Default language is English
+    :return: word_count, count of each word as a dictionary
     """
-    pass
+    ### Use the function from text_processing
+    # tokenization
+    word_list = text_processing.tokenize_text(text)
+
+    # if lemm == True, do the lemmatization
+    if lemm:
+        word_list = text_processing.lemmatize_words(word_list, lang)
+
+    # word count
+    word_count = Counter(word_list)
+    print(type(word_count))
+
+    return word_count
 
 
 def extract_sentence_lengths(text):
@@ -83,3 +100,8 @@ def combine_features_all_texts():
     :return: a Tuple of numpy arrays -> (features, labels)
     """
     pass
+
+if __name__ == "__main__":
+    text = "I can't help but think that if you were still alive you would have solved it in minutes in the U.S.A., and the victim would still be alive. The bananas cost $4.5, which 77.8% of what apples cost."
+    print(extract_word_counts(text))
+    print(extract_word_counts(text, lemm=False))
