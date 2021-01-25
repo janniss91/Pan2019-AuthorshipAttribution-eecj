@@ -25,7 +25,6 @@ def extract_word_counts(text,lemm=True,lang="english"):
 
     # word count
     word_count = Counter(word_list)
-    print(type(word_count))
 
     return word_count
 
