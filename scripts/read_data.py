@@ -1,5 +1,6 @@
 import os
 from typing import List
+import json
 
 DATA_DIR = "data"
 UNKOWN_FILE = "unknown"
@@ -38,9 +39,13 @@ class Problem:
         self.name = name
         self.candidates = {}
         self.unknown_texts = {}
+        self.truths = {}  # gold-standard labels for the unknown text
 
         self.store_candidates()
         self.store_unknown()
+        self.read_ground_true()
+
+
 
     def store_candidates(self):
         for candidate_id in CANDIDATE_IDS:
@@ -66,6 +71,13 @@ class Problem:
 
     def __iter__(self):
         return iter([candidate for candidate in self.candidates.values()])
+
+    def read_ground_true(self):
+        truth_file = os.path.join(DATA_DIR, self.name, 'ground-truth.json')
+        with open(truth_file, 'r') as f:
+            ground_truths = json.load(f)['ground_truth']
+        for truth in ground_truths:
+            self.truths[truth['unknown-text']] = truth['true-author']
 
 
 class LanguageData:
@@ -116,6 +128,8 @@ def read_text_file(filename: str) -> str:
     return text
 
 
+
+
 if __name__ == "__main__":
 
     # Testing
@@ -159,3 +173,6 @@ if __name__ == "__main__":
         text1u120 = test_file.read().replace("\n", " ")
     assert english.get_unknown("problem00001", "unknown00120.txt") == text1u120
     assert problem1.unknown_texts["unknown00120.txt"] == text1u120
+
+    # Test read ground-truth.json works
+    assert problem1.truths["unknown00001.txt"] == "candidate00007"
