@@ -3,3 +3,5 @@ env
 
 # Keep all PyCharm data out of this repository.
 .idea/*
+
+*/__pycache*
