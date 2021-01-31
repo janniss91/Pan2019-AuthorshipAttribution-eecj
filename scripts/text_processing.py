@@ -49,9 +49,9 @@ def lemmatize_words(tokens: List[str], lang: str) -> List[str]:
     return lemmas
 
 
-def char_ngrams(train_text, test_text, gram_range=(3, 3)):
+def char_ngrams(train_text, test_text, gram_range=(3, 3), min_df=0.12):
     vectorizer = TfidfVectorizer(analyzer='char', ngram_range=gram_range,
-                                 lowercase=False, min_df=0.12, sublinear_tf=True)
+                                 lowercase=False, min_df=min_df, sublinear_tf=True)
     train_ngram = vectorizer.fit_transform(train_text)
     test_ngram = vectorizer.transform(test_text)
     # print(vectorizer.get_feature_names())
@@ -59,9 +59,9 @@ def char_ngrams(train_text, test_text, gram_range=(3, 3)):
     return train_ngram.toarray(), test_ngram.toarray()
 
 
-def word_ngrams(train_text, test_text, gram_range=(1, 3)):
+def word_ngrams(train_text, test_text, gram_range=(1, 3), min_df=0.03):
     vectorizer = TfidfVectorizer(analyzer='word', ngram_range=gram_range, tokenizer=nltk.tokenize.WordPunctTokenizer().tokenize,
-                                 lowercase=False, min_df=0.03, sublinear_tf=True)
+                                 lowercase=False, min_df=min_df, sublinear_tf=True)
     train_ngram = vectorizer.fit_transform(train_text)
     test_ngram = vectorizer.transform(test_text)
     # print(vectorizer.get_feature_names())
