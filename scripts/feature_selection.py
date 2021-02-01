@@ -5,9 +5,9 @@ Below are some examples of functions that care about single features.
 """
 from collections import Counter
 import text_processing
-import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.tokenize import WordPunctTokenizer
+from typing import List
 
 
 def extract_word_counts(text,lemm=True,lang="english"):
@@ -32,35 +32,38 @@ def extract_word_counts(text,lemm=True,lang="english"):
     return word_count
 
 
-def char_ngrams(train_text, test_text, ngram_range=(3, 3), min_df=0.12):
+def char_ngrams(train_texts: List, test_texts: List, ngram_range=(3, 3), min_df=0.12):
     """
     This funciton returns char-ngrams feature in arrays
     train_text : The text used for training
     test_text : The text used for testing
     ngram_range: The range of n. if we want 3-grams and 4-grams, use (3,4)
     min_df : The minimal document frequency
+
+    :return: a tuple of training vector and test vector for all texts
     """
     vectorizer = TfidfVectorizer(analyzer='char', ngram_range=ngram_range,
                                  lowercase=False, min_df=min_df, sublinear_tf=True)
-    train_ngram = vectorizer.fit_transform(train_text)
-    test_ngram = vectorizer.transform(test_text)
-    # print(vectorizer.get_feature_names())
+    train_ngram = vectorizer.fit_transform(train_texts)
+    test_ngram = vectorizer.transform(test_texts)
 
     return train_ngram.toarray(), test_ngram.toarray()
 
 
-def word_ngrams(train_text, test_text, ngram_range=(1, 3), min_df=0.03):
+def word_ngrams(train_texts: List, test_texts: List, ngram_range=(1, 3), min_df=0.03):
     """
         This funciton returns word-ngrams feature in arrays
-        train_text : The text used for training
-        test_text : The text used for testing
+        train_text : The texts used for training
+        test_text : The texts used for testing
         ngram_range: The range of n. if we want 3-grams and 4-grams, use (3,4)
         min_df : The minimal document frequency
+
+        :return: a tuple of training vector and test vector for all texts
         """
     vectorizer = TfidfVectorizer(analyzer='word', ngram_range=ngram_range, tokenizer=WordPunctTokenizer().tokenize,
                                  lowercase=False, min_df=min_df, sublinear_tf=True)
-    train_ngram = vectorizer.fit_transform(train_text)
-    test_ngram = vectorizer.transform(test_text)
+    train_ngram = vectorizer.fit_transform(train_texts)
+    test_ngram = vectorizer.transform(test_texts)
 
     return train_ngram.toarray(), test_ngram.toarray()
 
@@ -154,5 +157,22 @@ if __name__ == "__main__":
     print(extract_word_counts(text))
     print(extract_word_counts(text, lemm=False))
 
+    # Testing char n-gram function
+    train_text1 = "idea."
+    train_text2 = "flea."
+    test_text1 = "dear."
+    test_text2 = "glea."
 
+    cng = char_ngrams([train_text1, train_text2], [test_text1, test_text2])
+    print("char n_grams")
+    print(cng)
 
+    # Testing word n-gram function
+    train_text3 = "I like tables and blue chairs."
+    test_text3 = "You like tables and blue skies."
+
+    wng = word_ngrams([train_text3], [test_text3], ngram_range=(3, 3))
+    wng2 = word_ngrams([train_text3], [test_text3], ngram_range=(1, 1))
+    print("word n_grams")
+    print(wng)
+    print(wng2)
