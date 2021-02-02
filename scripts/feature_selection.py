@@ -6,6 +6,9 @@ Below are some examples of functions that care about single features.
 from collections import Counter
 import text_processing
 import numpy as np
+import unidecode
+from nltk.util import ngrams
+import string
 
 def extract_word_counts(text,lemm=True,lang="english"):
     """
@@ -109,10 +112,49 @@ def combine_features_all_texts():
     """
     pass
 
+def distorted_ngrams(text, n=2):
+    """
+    Replace some characters with the * symbol.
+    Maintain only punctuation marks and diacritical characters.
+    And extract ngrams from this text.
+    :param text: input text
+    :param n: number of items from ngrams, default is bigrams
+    :return: dist_ngram, which a dictionary of distortion ngrams
+    """
+
+    # to get distorted text, make unaccented plain text first
+    unacc_text = unidecode.unidecode(text)
+
+    dist_text = text
+    acc_list = []
+    # convert non-diacritical alphabets into *
+    for char in text:
+        if char == unacc_text[text.index(char)] and char != ' ' and char not in string.punctuation:
+            dist_text = dist_text.replace(char, '*')
+        elif char != ' ':
+            acc_list.append(char)  # collect diacritical characters
+    acc_list = set(acc_list)
+
+    # make a ngrams list
+    ngram = list(ngrams(dist_text, n))
+    dist_ngram = []
+
+    # from the whole ngrams, leave ngrams only containing diacritical characters or punctuations
+    for i in range(n):
+        dist_ngram.append(list(filter(lambda x: x[i] in (acc_list or string.punctuation), ngram)))
+    dist_ngram = sum(dist_ngram, [])  # to make 1d list
+
+    # counter dictionary for distortion ngrams count
+    return Counter(dist_ngram)
 
 if __name__ == "__main__":
 
     # Testing extract_word_counts
-    text = "I can't help but think that if you were still alive you would have solved it in minutes in the U.S.A., and the victim would still be alive. The bananas cost $4.5, which 77.8% of what apples cost."
-    print(extract_word_counts(text))
-    print(extract_word_counts(text, lemm=False))
+    # text = "I can't help but think that if you were still alive you would have solved it in minutes in the U.S.A., and the victim would still be alive. The bananas cost $4.5, which 77.8% of what apples cost."
+    # print(extract_word_counts(text))
+    # print(extract_word_counts(text, lemm=False))
+
+    # Testing distortion ngrams
+    text = "afrykanerskojęzycznym. Plébiscité sur la toile. Découvrez tous les logiciels à télécharger."
+    print(distorted_ngrams(text))
+    print(distorted_ngrams(text, 3))
