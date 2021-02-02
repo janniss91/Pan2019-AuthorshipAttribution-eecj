@@ -5,6 +5,7 @@ Below are some examples of functions that care about single features.
 """
 from collections import Counter
 import text_processing
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.tokenize import WordPunctTokenizer
 from typing import List
@@ -79,8 +80,8 @@ def punct_ngrams(train_texts: List[str], test_texts: List[str], ngram_range=(2, 
     train_punct_texts = extract_punct_ngrams(train_texts)
     test_punct_texts = extract_punct_ngrams(test_texts)
 
-    vectorizer = TfidfVectorizer(analyzer='char', ngram_range=ngram_range,
-                                 min_df=min_df, sublinear_tf=True)
+    vectorizer = CountVectorizer(analyzer='char', ngram_range=ngram_range,
+                                 min_df=min_df)
     train_ngram = vectorizer.fit_transform(train_punct_texts)
     test_ngram = vectorizer.transform(test_punct_texts)
 
