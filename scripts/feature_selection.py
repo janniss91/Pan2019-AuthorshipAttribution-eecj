@@ -5,9 +5,11 @@ Below are some examples of functions that care about single features.
 """
 from collections import Counter
 import text_processing
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.tokenize import WordPunctTokenizer
 from typing import List
+import string
 
 
 def extract_word_counts(text,lemm=True,lang="english"):
@@ -68,6 +70,48 @@ def word_ngrams(train_texts: List, test_texts: List, ngram_range=(1, 3), min_df=
     return train_ngram.toarray(), test_ngram.toarray()
 
 
+def punct_ngrams(train_texts: List[str], test_texts: List[str], ngram_range=(2, 3), min_df=0.12):
+    """
+    This function sets up punctuation n-grams as features in np array format.
+
+    :param train_texts: The list of training texts
+    :param test_texts: The list of test texts
+    """
+    train_punct_texts = extract_punct_ngrams(train_texts)
+    test_punct_texts = extract_punct_ngrams(test_texts)
+
+    vectorizer = CountVectorizer(analyzer='char', ngram_range=ngram_range,
+                                 min_df=min_df)
+    train_ngram = vectorizer.fit_transform(train_punct_texts)
+    test_ngram = vectorizer.transform(test_punct_texts)
+
+    return train_ngram.toarray(), test_ngram.toarray()
+
+
+def extract_punct_ngrams(texts: List[str]):
+    """
+    This function extracts all punctuation from a list of texts.
+
+    The output of these two texts:
+    text1 = "'Bla, bla. blub:'"
+    text2 = "I,am(using)many=different?punctuation!marks."
+
+    looks like this:
+    ["',.:'", ",()=?!."]
+
+    :param texts: The list of actual texts. 
+    """
+    punct_texts = []
+    for text in texts:
+        punct_text = ""
+        for letter in text:
+            if letter in string.punctuation:
+                punct_text += letter
+        punct_texts.append(punct_text)
+
+    return punct_texts
+
+
 def extract_sentence_lengths(text):
     """
     -BLOCKED-
@@ -120,6 +164,8 @@ def convert_sentence_lengths():
 
 def combine_features_per_text():
     """
+    -BLOCKED-
+
     This function should combine the arrays produced by the conversion
     functions above into one single numpy array (representing one text).
 
@@ -176,3 +222,13 @@ if __name__ == "__main__":
     print("word n_grams")
     print(wng)
     print(wng2)
+
+    # Testing for punctuation n-grams
+    train_text4 = "'Bla, bla. blub:'"
+    train_text5 = "I,am(using)many=different?punctuation!marks."
+    assert extract_punct_ngrams([train_text4, train_text5]) == ["',.:'", ",()=?!."]
+
+    test_text4 = "+,(this'is'-a test !text."
+    png = punct_ngrams([train_text4, train_text5], [test_text4], (2, 2))
+    print("punctuation n_grams")
+    print(png)
