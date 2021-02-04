@@ -16,6 +16,9 @@ import numpy as np
 from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, f1_score, recall_score
+from scipy.sparse import hstack
+
+
 
 
 def train(train_feature_vector, train_candidate_vector):
@@ -85,6 +88,22 @@ if __name__ == "__main__":
     english, french, italian, spanish = language_data_objs
 
     # Text Processing goes here.
+    english_text = english.get_all_known()
+    french_text = french.get_all_known()
+    italian_text = italian.get_all_known()
+    spanish_text = spanish.get_all_known()
+
+    # get labels - define labels for every candidate
+    array = np.repeat(np.arange(180), 7)
+
+
+    # get char-ngram
+
+    # get word-ngram
+
+    # get punct-ngram
+
+    # get distortion ngram
 
 
     # Train and Test
@@ -95,6 +114,7 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(problem1_text, problem1_label, test_size=0.33)
     train_f, test_f = feature_selection.char_ngrams(X_train, X_test)
     model = train(train_f, y_train)
+
     test(model, test_f, y_test)
 
 
