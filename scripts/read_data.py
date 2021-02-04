@@ -193,6 +193,6 @@ if __name__ == "__main__":
 
     # Test read ground-truth.json works
     assert problem1.truths["unknown00001.txt"] == "candidate00007"
-
-
+    assert len(problem1.labels) == 63
+    assert len(english.get_all_labels()) == 315
 
