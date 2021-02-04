@@ -112,6 +112,107 @@ def extract_punct_ngrams(texts: List[str]):
     return punct_texts
 
 
+def dist_ngrams(train_text, test_text, ngram_range=(2, 2), min_df=0.12):
+    """
+    Replace some characters with the * symbol.
+    Maintain only punctuation marks and diacritical characters.
+    And extract ngrams from this text.
+
+    :param train_text: texts for train
+    :param test_text: texts for test
+    :param ngram_range: range for ngrams, default is bigrams.
+                        If trigrams, put (3,3).
+
+    :return: arrays of distortion ngrams for train_text and test_text
+    """
+    train_dist_text = extract_dist_ngrams(train_text)
+    test_dist_text = extract_dist_ngrams(test_text)
+
+    if ngram_range == (2, 2):
+        train_dist_text = bigrams_process(train_dist_text)
+        test_dist_text = bigrams_process(test_dist_text)
+
+
+    elif ngram_range == (3, 3):
+        train_dist_text = trigrams_process(train_dist_text)
+        test_dist_text = trigrams_process(test_dist_text)
+
+    vectorizer = CountVectorizer(analyzer='char', ngram_range=ngram_range,
+                                 min_df=min_df)
+
+    train_ngram = vectorizer.fit_transform(train_dist_text)
+    test_ngram = vectorizer.transform(test_dist_text)
+
+    return train_ngram.toarray(), test_ngram.toarray()
+
+
+def extract_dist_ngrams(texts):
+    """
+    covert normal alphabets in the text into *
+    leave only diacritical letters and punctuations
+
+    :param texts: input texts
+    :return: converted text
+    """
+    acc_list = []
+    result = []
+
+    for text in texts:
+        unacc_text = unidecode.unidecode(text)
+        dist_text = text
+
+        for char in text:
+            if char == unacc_text[text.index(char)] and char != ' ' and char not in string.punctuation:
+                dist_text = dist_text.replace(char, '*')
+            elif char != ' ':
+                acc_list.append(char)  # collect diacritical characters
+        acc_list = list(set(acc_list))
+        result.append(dist_text)
+
+    return result
+
+def bigrams_process(texts):
+    """
+    convert more than one continuous asterisks into one asterisk
+    such as '***ę*******. **é***' -> '*ę*. *é*'
+
+    :param texts: input text'
+    :return: converted text which has no more than one asterisk in the strings
+    """
+    result = []
+    for text in texts:
+        list_temp = ''
+        for i in range(len(text)):
+            if i == 0:
+                list_temp += text[i]
+            elif list_temp[-1] != text[i]:
+                list_temp += text[i]
+        result.append(list_temp)
+    return result
+
+
+def trigrams_process(texts):
+    """
+    similar to bigram_process method.
+    Convert more than two continuous asterisks into two asterisk
+    such as '***ę*******. **é***' -> '**ę**. **é**'
+
+    :param texts: input text'
+    :return: converted text which has no more than two countinous asterisks in the strings
+    """
+    result = []
+
+    for text in texts:
+        list_temp = text[0:2]
+        for i in range(2, len(text)):
+            if text[i] != '*':
+                list_temp += text[i]
+            elif list_temp[-2:] != '**':
+                list_temp += text[i]
+        result.append(list_temp)
+    return result
+
+
 def extract_sentence_lengths(text):
     """
     -BLOCKED-
@@ -232,3 +333,12 @@ if __name__ == "__main__":
     png = punct_ngrams([train_text4, train_text5], [test_text4], (2, 2))
     print("punctuation n_grams")
     print(png)
+
+    # test for distortion ngrams
+    text1 = 'afrykanerskojęzycznym. Plébiscité sur la toile. Découvrez tous les logiciels à télécharger.'
+    text2 = 'le vaccin AstraZeneca est autorisé en France, mais n\'est pas recommandé aux plus de 65 ans'
+    text3 = 'Contrairement aux deux autres vaccins déjà disponibles, ceux de Pfizer/BioNTech et Moderna, celui d\'AstraZeneca peut être stocké à long terme dans des frigos classiques, ce qui facilite son déploiement logistique.'
+    text4 = 'Pascal Soriot et Stéphane Bancel, deux Français expatriés au cœur de la course au vaccin'
+
+    print(dist_ngrams([text1, text2], [text3, text4]))
+    print(dist_ngrams([text1, text2], [text3, text4], (3, 3)))
