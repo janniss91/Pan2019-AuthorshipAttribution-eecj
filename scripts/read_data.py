@@ -1,7 +1,6 @@
 import os
 from typing import List
 import json
-
 DATA_DIR = "data"
 UNKOWN_FILE = "unknown"
 LANGUAGES = ("english", "french", "italian", "spanish")
@@ -17,6 +16,7 @@ class Candidate:
         self.name = name
         self.problem_id = problem_id
         self.known_texts = {}
+        self.label = int(self.problem_id[-2:]) * 10 + int(self.name[-1])
 
         self.store_known_texts()
 
@@ -40,12 +40,13 @@ class Problem:
         self.candidates = {}
         self.unknown_texts = {}
         self.truths = {}  # gold-standard labels for the unknown text
+        self.unknown_with_labels = []  # labels with the unknown text [(text1, label1), (text2, label2)]
+        self.labels = []
 
         self.store_candidates()
         self.store_unknown()
         self.read_ground_true()
-
-
+        self.read_unknown_label_in_array()
 
     def store_candidates(self):
         for candidate_id in CANDIDATE_IDS:
@@ -78,6 +79,18 @@ class Problem:
             ground_truths = json.load(f)['ground_truth']
         for truth in ground_truths:
             self.truths[truth['unknown-text']] = truth['true-author']
+
+    def read_unknown_label_in_array(self):
+        unknown_list = list(self.unknown_texts.items())
+        for unknown_text in unknown_list:
+            if self.truths[unknown_text[0]] == '<UNK>':
+                self.unknown_with_labels.append((unknown_text[1], -1))
+            else:
+                label = int(self.truths[unknown_text[0]][-1]) + int(self.name[-2:]) * 10
+                self.unknown_with_labels.append((unknown_text[1], label))
+        # put labels in the list
+        for candidate in self.candidates.values():
+            self.labels.extend([candidate.label]*7)
 
 
 class LanguageData:
@@ -113,6 +126,12 @@ class LanguageData:
             for unknown in problem.unknown_texts.values():
                 all_unknown.append(unknown)
 
+    def get_all_labels(self):
+        all_label = []
+        for problem in self.problems.values():
+            all_label.extend(problem.labels)
+        return all_label
+
     def __iter__(self):
         return iter([problem for problem in self.problems.values()])
 
@@ -126,8 +145,6 @@ def read_text_file(filename: str) -> str:
         text = f.read().replace("\n", " ")
 
     return text
-
-
 
 
 if __name__ == "__main__":
@@ -176,3 +193,6 @@ if __name__ == "__main__":
 
     # Test read ground-truth.json works
     assert problem1.truths["unknown00001.txt"] == "candidate00007"
+    assert len(problem1.labels) == 63
+    assert len(english.get_all_labels()) == 315
+
