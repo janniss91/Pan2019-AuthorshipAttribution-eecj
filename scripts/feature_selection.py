@@ -10,6 +10,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.tokenize import WordPunctTokenizer
 from typing import List
 import string
+import unidecode
 
 
 def extract_word_counts(text,lemm=True,lang="english"):
@@ -112,7 +113,7 @@ def extract_punct_ngrams(texts: List[str]):
     return punct_texts
 
 
-def dist_ngrams(train_text, test_text, ngram_range=(2, 2), min_df=0.12):
+def dist_ngrams(train_text, test_text, n=2, min_df=0.12):
     """
     Replace some characters with the * symbol.
     Maintain only punctuation marks and diacritical characters.
@@ -120,31 +121,28 @@ def dist_ngrams(train_text, test_text, ngram_range=(2, 2), min_df=0.12):
 
     :param train_text: texts for train
     :param test_text: texts for test
-    :param ngram_range: range for ngrams, default is bigrams.
-                        If trigrams, put (3,3).
+    :param n: number of ngrams, default is bigrams. If wants trigram, n=3
+    Because distortion ngrams can't fit bigram to trigram at the same time.
 
     :return: arrays of distortion ngrams for train_text and test_text
     """
+    if n != 2 or 3:
+        raise ValueError("Only bigrams or trigrams available")
+
     train_dist_text = extract_dist_ngrams(train_text)
     test_dist_text = extract_dist_ngrams(test_text)
 
-    if ngram_range == (2, 2):
-        train_dist_text = bigrams_process(train_dist_text)
-        test_dist_text = bigrams_process(test_dist_text)
+    train_dist_text = ngrams_process(train_dist_text, n)
+    test_dist_text = ngrams_process(test_dist_text, n)
 
+    ngram_range = (n, n)
 
-    elif ngram_range == (3, 3):
-        train_dist_text = trigrams_process(train_dist_text)
-        test_dist_text = trigrams_process(test_dist_text)
-
-    vectorizer = CountVectorizer(analyzer='char', ngram_range=ngram_range,
-                                 min_df=min_df)
+    vectorizer = CountVectorizer(analyzer='char', ngram_range=ngram_range, min_df=min_df)
 
     train_ngram = vectorizer.fit_transform(train_dist_text)
     test_ngram = vectorizer.transform(test_dist_text)
 
     return train_ngram.toarray(), test_ngram.toarray()
-
 
 def extract_dist_ngrams(texts):
     """
@@ -171,130 +169,33 @@ def extract_dist_ngrams(texts):
 
     return result
 
-def bigrams_process(texts):
+def ngrams_process(dist_texts,n=2):
     """
-    convert more than one continuous asterisks into one asterisk
-    such as '***ę*******. **é***' -> '*ę*. *é*'
+    convert more than one or two continuous asterisks into one asterisk
+    such as '***ę*******. **é***' -> '*ę*. *é*' in bigrams
+    or '***ę*******. **é***' -> '**ę**. **é**'
 
-    :param texts: input text'
+    :param texts: input text which has converted normal alphabets into asterisks
+    :param n: number of ngrams, default is 2. Other option is 3 for trigram
     :return: converted text which has no more than one asterisk in the strings
     """
     result = []
-    for text in texts:
-        list_temp = ''
-        for i in range(len(text)):
-            if i == 0:
-                list_temp += text[i]
-            elif list_temp[-1] != text[i]:
-                list_temp += text[i]
+    for text in dist_texts:
+        if n == 2:
+            list_temp = dist_texts[0]
+            for i in range(1, len(dist_texts)):
+                if list_temp[-1] != dist_texts[i]:
+                    list_temp += dist_texts[i]
+        if n == 3:
+            list_temp = dist_texts[0:2]
+            for i in range(2,len(dist_texts)):
+                if dist_texts[i] != '*':
+                    list_temp += dist_texts[i]
+                elif list_temp[-2:] != '**':
+                    list_temp += dist_texts[i]
+
         result.append(list_temp)
     return result
-
-
-def trigrams_process(texts):
-    """
-    similar to bigram_process method.
-    Convert more than two continuous asterisks into two asterisk
-    such as '***ę*******. **é***' -> '**ę**. **é**'
-
-    :param texts: input text'
-    :return: converted text which has no more than two countinous asterisks in the strings
-    """
-    result = []
-
-    for text in texts:
-        list_temp = text[0:2]
-        for i in range(2, len(text)):
-            if text[i] != '*':
-                list_temp += text[i]
-            elif list_temp[-2:] != '**':
-                list_temp += text[i]
-        result.append(list_temp)
-    return result
-
-
-def extract_sentence_lengths(text):
-    """
-    -BLOCKED-
-
-    This function requires tokenization and lemmatization.
-    This function also requires a sentence splitting method.
-
-    :return: This should return the lengths of all 
-    sentences in the text as a List of integers
-    """
-    pass
-
-
-"""
-... more feature exraction methods can go here
-"""
-
-
-def convert_word_counts():
-    """
-    -BLOCKED-
-
-    Find a way to convert the word counts of a text into a meaningful
-    numeric representation that can be used as input to the SVM.
-
-    Maybe this can be a bag-of-words multiple-hot (not one-hot) kind of
-    approach where a long sparse matrix with word counts is used.
-
-    But maybe in order to not have sparsity, we can find a better solution.
-
-    :return: numpy array
-    """
-    pass
-
-
-def convert_sentence_lengths():
-    """
-    -BLOCKED-
-
-    Find a way to convert the sentence lengths of a text into a meaningful
-    numeric representation that can be used as input to the SVM.
-
-    Maybe we can just take the sentence lengths as they are and put
-    them into a numpy array
-
-    :return: numpy array
-    """
-    pass
-
-
-def combine_features_per_text():
-    """
-    -BLOCKED-
-
-    This function should combine the arrays produced by the conversion
-    functions above into one single numpy array (representing one text).
-
-    :return: This should return a numpy array of size (1 * num_total_features)
-    """
-    pass
-
-
-def combine_features_all_texts():
-    """
-    The function will be used twice, once for our training data and
-    once for our testing data.
-
-    This function should combine all features of all texts into one
-    big numpy array of the shape:
-
-    (num_texts * num_total_features)
-
-    Also, the function should return the numpy array of candidates,
-    which will be our labels.
-    Shape should be:
-
-    (num_texts * 1)
-
-    :return: a Tuple of numpy arrays -> (features, labels)
-    """
-    pass
-
 
 
 if __name__ == "__main__":
@@ -341,4 +242,4 @@ if __name__ == "__main__":
     text4 = 'Pascal Soriot et Stéphane Bancel, deux Français expatriés au cœur de la course au vaccin'
 
     print(dist_ngrams([text1, text2], [text3, text4]))
-    print(dist_ngrams([text1, text2], [text3, text4], (3, 3)))
+    print(dist_ngrams([text1, text2], [text3, text4], 3))
