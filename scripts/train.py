@@ -40,7 +40,7 @@ def train(train_feature_vector, train_candidate_vector, tune=False, params=None)
     elif params:
         svm_model = SVC(probability=True).set_params(**params)
     else:
-        svm_model = SVC(probability=True, kernel='sigmoid', C=10, gamma=0.001)
+        svm_model = SVC(probability=True, kernel='sigmoid', C=1000, gamma=0.01)
 
     svm_model.fit(train_feature_vector, train_candidate_vector)
 
