@@ -121,10 +121,11 @@ class LanguageData:
         return self.problems[problem].unknown_texts[unknown]
 
     def get_all_unknown(self):
+        # return unknown text and labels [(text1,label1), (text2, label2)]
         all_unknown = []
         for problem in self.problems.values():
-            for unknown in problem.unknown_texts.values():
-                all_unknown.append(unknown)
+            all_unknown.extend(problem.unknown_with_labels)
+        return all_unknown
 
     def get_all_labels(self):
         all_label = []
