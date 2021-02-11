@@ -126,7 +126,7 @@ def dist_ngrams(train_text, test_text, n=2, min_df=0.12):
 
     :return: arrays of distortion ngrams for train_text and test_text
     """
-    if n != 2 or 3:
+    if n not in (2, 3):
         raise ValueError("Only bigrams or trigrams available")
 
     train_dist_text = extract_dist_ngrams(train_text)
@@ -182,17 +182,17 @@ def ngrams_process(dist_texts,n=2):
     result = []
     for text in dist_texts:
         if n == 2:
-            list_temp = dist_texts[0]
-            for i in range(1, len(dist_texts)):
-                if list_temp[-1] != dist_texts[i]:
-                    list_temp += dist_texts[i]
+            list_temp = text[0]
+            for i in range(1, len(text)):
+                if list_temp[-1] != text[i]:
+                    list_temp += text[i]
         if n == 3:
-            list_temp = dist_texts[0:2]
-            for i in range(2,len(dist_texts)):
-                if dist_texts[i] != '*':
-                    list_temp += dist_texts[i]
+            list_temp = text[0:2]
+            for i in range(2,len(text)):
+                if text[i] != '*':
+                    list_temp += text[i]
                 elif list_temp[-2:] != '**':
-                    list_temp += dist_texts[i]
+                    list_temp += text[i]
 
         result.append(list_temp)
     return result
@@ -241,5 +241,6 @@ if __name__ == "__main__":
     text3 = 'Contrairement aux deux autres vaccins déjà disponibles, ceux de Pfizer/BioNTech et Moderna, celui d\'AstraZeneca peut être stocké à long terme dans des frigos classiques, ce qui facilite son déploiement logistique.'
     text4 = 'Pascal Soriot et Stéphane Bancel, deux Français expatriés au cœur de la course au vaccin'
 
+    print("distortion ngrams")
     print(dist_ngrams([text1, text2], [text3, text4]))
     print(dist_ngrams([text1, text2], [text3, text4], 3))
