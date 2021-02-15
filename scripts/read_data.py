@@ -16,7 +16,7 @@ class Candidate:
         self.name = name
         self.problem_id = problem_id
         self.known_texts = {}
-        self.label = int(self.problem_id[-2:]) * 10 + int(self.name[-1])
+        self.label = int(self.name[-1])
 
         self.store_known_texts()
 
@@ -86,7 +86,7 @@ class Problem:
             if self.truths[unknown_text[0]] == '<UNK>':
                 self.unknown_with_labels.append((unknown_text[1], -1))
             else:
-                label = int(self.truths[unknown_text[0]][-1]) + int(self.name[-2:]) * 10
+                label = int(self.truths[unknown_text[0]][-1])
                 self.unknown_with_labels.append((unknown_text[1], label))
         # put labels in the list
         for candidate in self.candidates.values():

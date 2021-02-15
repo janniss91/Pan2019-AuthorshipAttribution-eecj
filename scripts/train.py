@@ -18,7 +18,8 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn import preprocessing
 from itertools import islice
-
+from prettytable import PrettyTable
+import json
 
 def train(train_feature_vector, train_candidate_vector, tune=False, params=None):
     """
@@ -30,9 +31,9 @@ def train(train_feature_vector, train_candidate_vector, tune=False, params=None)
     if tune:
         # parameters for cross-validation
         params = [{'kernel': ['rbf', 'sigmoid'], 'gamma': [1e-2, 1e-3, 1e-4, 1e-5],
-                   'C': [0.001, 0.10, 0.1, 10, 25, 50, 100, 1000]},
+                   'C': [0.001, 0.01, 0.1, 10, 25, 50, 100, 1000]},
                   {'kernel': ['linear'], 'C': [0.001, 0.10, 0.1, 10, 25, 50, 100, 1000]}]
-        grid = GridSearchCV(SVC(), params, cv=2, refit=True, verbose=3)
+        grid = GridSearchCV(SVC(), params, cv=7, refit=True, verbose=3)
         grid.fit(train_feature_vector, train_candidate_vector)
 
         svm_model = grid.best_estimator_.set_params(probability=True)
@@ -40,14 +41,14 @@ def train(train_feature_vector, train_candidate_vector, tune=False, params=None)
     elif params:
         svm_model = SVC(probability=True).set_params(**params)
     else:
-        svm_model = SVC(probability=True, kernel='sigmoid', C=1000, gamma=0.01)
+        svm_model = SVC(probability=True, kernel='sigmoid', C=10, gamma=0.01)
 
     svm_model.fit(train_feature_vector, train_candidate_vector)
 
     return svm_model
 
 
-def predict(model, feature_vector, min_difference=0.004, min_probability=0.01):
+def predict(models, feature_vectors, min_difference=0.1, min_probability=0.25):
     """
     Predict with threshold and return an array of shape (numbers_of_samples, numbers_of_classes)
     model : a svm model
@@ -55,31 +56,30 @@ def predict(model, feature_vector, min_difference=0.004, min_probability=0.01):
     min_difference : classify to unknown if difference highest and second highest probabilities is below min_difference
     min_probability : classify to unknown if highest probability is below min_probability
     """
-    # probability prediction
-    proba_predictions = model.predict_proba(feature_vector)
-    # label prediction
-    label_predictions = model.predict(feature_vector)
+    predict_probas = []
+    for model, vector in zip(models, feature_vectors):
+        # probability prediction
+        predict_probas.append(model.predict_proba(vector))
+    average_proba = sum(predict_probas) / len(models)  # soft-voting
 
-    for i, proba_prediction in enumerate(proba_predictions):
+    labels = np.zeros((average_proba.shape[0],))
+    for i, proba in enumerate(average_proba):
         # get the highest and second highest probabilities
-        max_proba = np.amax(proba_prediction)
-        second_proba = np.sort(proba_prediction)[-2]
+        max_proba = np.amax(proba)
+        max_index = proba.argmax()
+        second_proba = np.sort(proba)[-2]
 
         # check should we classify as unknown
         if max_proba - second_proba < min_difference or max_proba < min_probability:
-            label_predictions[i] = -1  # set unknown candidate to label -1
+            labels[i] = -1  # set unknown candidate to label -1
+        else:
+            labels[i] = max_index + 1  # convert index to label
 
-    return label_predictions
+    return labels
 
 
-def evaluate(prediction_vector, truth_vector, problem_id=None):
-    if not problem_id:
-        print("Average ")
-    else:
-        print("Problem" + str(problem_id))
-    print("Accuracy : ", accuracy_score(truth_vector, prediction_vector))
-    print("F1 score : ", f1_score(truth_vector, prediction_vector, average='macro'))
-    print("-----------------------")
+def evaluate(prediction_vector, truth_vector):
+    return accuracy_score(truth_vector, prediction_vector), f1_score(truth_vector, prediction_vector, average='macro')
 
 
 if __name__ == "__main__":
@@ -97,64 +97,77 @@ if __name__ == "__main__":
     # NOTE: Look in read_data.py how to access these objects.
     english, french, italian, spanish = language_data_objs
 
-    # Text Processing goes here.
-    # Get Training data - get all known texts for training and combine all text to a list
-    train_text = english.get_all_known() + french.get_all_known() + italian.get_all_known() + spanish.get_all_known()
-    # get labels and combine all labels to a numpy array
-    train_label_vector = np.array(english.get_all_labels() + french.get_all_labels() + italian.get_all_labels() + spanish.get_all_labels())
+    # print the result
+    x = PrettyTable()
+    x.field_names = ["Problem", "Baseline Accuracy", "Baseline F1-score", "Soft Vote Accuracy", "Soft Vote F1-score"]
+    total_baseline_acc = 0
+    total_baseline_f1 = 0
+    total_soft_acc = 0
+    total_soft_f1 = 0
 
-    # get all unknown text for testing
-    english_unknown_text, english_unknown_label = map(list,zip(*english.get_all_unknown()))
-    french_unknown_text, french_unknown_label = map(list, zip(*french.get_all_unknown()))
-    italian_unknown_text, italian_unknown_label = map(list, zip(*italian.get_all_unknown()))
-    spanish_unknown_text, spanish_unknown_label = map(list, zip(*spanish.get_all_unknown()))
-    # combine all unknown text
-    test_text = english_unknown_text + french_unknown_text + italian_unknown_text + spanish_unknown_text
-    # combine all truth labels
-    test_label_vector = np.array(english_unknown_label + french_unknown_label + italian_unknown_label + spanish_unknown_label)
+    params_dict = {}
 
+    # iterate over langauges
+    for langauge in language_data_objs:
+        # iterate over problems
+        for problem_name in langauge.problems:
+            problem = langauge.problems[problem_name]
+            train_text = problem.get_all_known()
+            train_label = np.array(problem.labels)
+            test_text = [x[0] for x in problem.unknown_with_labels]
+            test_label = np.array([x[1] for x in problem.unknown_with_labels])
+            # get char-ngram
+            char_train, char_test = feature_selection.char_ngrams(train_text, test_text)
+            # get word-ngram
+            word_train, word_test = feature_selection.word_ngrams(train_text, test_text)
+            # get punct-ngram
+            punct_train, punct_test = feature_selection.punct_ngrams(train_text, test_text)
+            # get distortion ngram
+            dist_train, dist_test = feature_selection.dist_ngrams(train_text, test_text)
 
-    # get char-ngram
-    char_train, char_test = feature_selection.char_ngrams(train_text, test_text)
+            # combine all features vectors to one numpy array
+            train_feature_vector = np.hstack((char_train, word_train, punct_train, dist_train))
+            test_feature_vector = np.hstack((char_test, word_test, punct_test, dist_test))
 
-    # get word-ngram
-    word_train, word_test = feature_selection.word_ngrams(train_text, test_text)
+            # Normalize the vector
+            scaler = preprocessing.MaxAbsScaler()
+            train_feature_vector = scaler.fit_transform(train_feature_vector)
+            test_feature_vector = scaler.transform(test_feature_vector)
+            char_train = scaler.fit_transform(char_train)
+            char_test = scaler.transform(char_test)
+            word_train = scaler.fit_transform(word_train)
+            word_test = scaler.transform(word_test)
+            punct_train = scaler.fit_transform(punct_train)
+            punct_test = scaler.transform(punct_test)
+            dist_train = scaler.fit_transform(dist_train)
+            dist_test = scaler.transform(dist_test)
 
-    # get punct-ngram
-    punct_train, punct_test = feature_selection.punct_ngrams(train_text, test_text)
+            # train models with different features
+            params = json.load(open('params.json'))
+            char_svm = train(char_train, train_label, params=params[problem_name]['char_svm'])
+            word_svm = train(word_train, train_label, params=params[problem_name]['word_svm'])
+            punct_svm = train(punct_train, train_label, params=params[problem_name]['punct_svm'])
+            dist_svm = train(dist_train, train_label, params=params[problem_name]['dist_svm'])
+            baseline_svm = train(train_feature_vector, train_label, params=params[problem_name]['base_svm'])
 
-    # get distortion ngram
-    dist_train, dist_test = feature_selection.dist_ngrams(train_text, test_text)
+            # put models in a list and test vectors in a list
+            models = [char_svm, word_svm, punct_svm, dist_svm]
+            test_feature_vectors = [char_test, word_test, punct_test, dist_test]
 
-    # combine all features vectors to one numpy array
-    train_feature_vector = np.hstack((char_train, word_train, punct_train, dist_train))
-    test_feature_vector = np.hstack((char_test, word_test, punct_test, dist_test))
+            predictions_soft_vote = predict(models, test_feature_vectors)  # predictions with soft voting
+            prediction_baseline = predict([baseline_svm], [test_feature_vector])  # prediction without soft voting
 
-    # Normalize the vector
-    scaler = preprocessing.MaxAbsScaler()
-    train_feature_vector = scaler.fit_transform(train_feature_vector)
-    test_feature_vector = scaler.transform(test_feature_vector)
-    # classify vectors by problems - for evaluating model on different testing data in different languages
-    sizes = []  # numbers of unknown files in every Problem
-    for lang in language_data_objs:
-        for problem in lang.problems.values():
-            sizes.append(len(problem.unknown_with_labels))
-    it = iter(test_feature_vector)
-    unknown_text_list = [list(islice(it, n)) for n in sizes]
-    it2 = iter(test_label_vector)
-    unknown_label_list = [list(islice(it2, n)) for n in sizes]
+            # Evaluate
+            soft_acc, soft_f1 = evaluate(predictions_soft_vote, test_label)
+            baseline_acc, baseline_f1 = evaluate(prediction_baseline, test_label)
+            total_soft_acc += soft_acc
+            total_soft_f1 += soft_f1
+            total_baseline_acc += baseline_acc
+            total_baseline_f1 += baseline_f1
+            x.add_row([problem_name[-2:], baseline_acc, baseline_f1, soft_acc, soft_f1])
 
-    # Train and Test
-    model = train(train_feature_vector, train_label_vector)  # svm model
-    all_predictions = predict(model, test_feature_vector)  # all predictions of unknown text
-    # make predictions of different problems - for evaluating
-    predictions_per_problem = []  # [predictions_for_unknown_in_problem1, predictions_for_unknown_in_problem2, ...]
-    for vector in unknown_text_list:
-        predictions_per_problem.append(predict(model, vector))
+    x.add_row(["Mean", total_baseline_acc/20, total_baseline_f1/20, total_soft_acc/20, total_soft_f1/20])
+    print(x)
 
-    # Evaluate
-    for i, (predictions, labels) in enumerate(zip(predictions_per_problem, unknown_label_list)):
-        evaluate(predictions, labels, problem_id=i+1)
-    evaluate(all_predictions, test_label_vector)
 
 
