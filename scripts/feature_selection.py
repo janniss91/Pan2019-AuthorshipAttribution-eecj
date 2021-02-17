@@ -5,9 +5,12 @@ Below are some examples of functions that care about single features.
 """
 from collections import Counter
 import text_processing
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.tokenize import WordPunctTokenizer
 from typing import List
+import string
+import unidecode
 
 
 def extract_word_counts(text,lemm=True,lang="english"):
@@ -68,86 +71,131 @@ def word_ngrams(train_texts: List, test_texts: List, ngram_range=(1, 3), min_df=
     return train_ngram.toarray(), test_ngram.toarray()
 
 
-def extract_sentence_lengths(text):
+def punct_ngrams(train_texts: List[str], test_texts: List[str], ngram_range=(2, 3), min_df=0.12):
     """
-    -BLOCKED-
+    This function sets up punctuation n-grams as features in np array format.
 
-    This function requires tokenization and lemmatization.
-    This function also requires a sentence splitting method.
-
-    :return: This should return the lengths of all 
-    sentences in the text as a List of integers
+    :param train_texts: The list of training texts
+    :param test_texts: The list of test texts
     """
-    pass
+    train_punct_texts = extract_punct_ngrams(train_texts)
+    test_punct_texts = extract_punct_ngrams(test_texts)
+
+    vectorizer = CountVectorizer(analyzer='char', ngram_range=ngram_range,
+                                 min_df=min_df)
+    train_ngram = vectorizer.fit_transform(train_punct_texts)
+    test_ngram = vectorizer.transform(test_punct_texts)
+
+    return train_ngram.toarray(), test_ngram.toarray()
 
 
-"""
-... more feature exraction methods can go here
-"""
-
-
-def convert_word_counts():
+def extract_punct_ngrams(texts: List[str]):
     """
-    -BLOCKED-
+    This function extracts all punctuation from a list of texts.
 
-    Find a way to convert the word counts of a text into a meaningful
-    numeric representation that can be used as input to the SVM.
+    The output of these two texts:
+    text1 = "'Bla, bla. blub:'"
+    text2 = "I,am(using)many=different?punctuation!marks."
 
-    Maybe this can be a bag-of-words multiple-hot (not one-hot) kind of
-    approach where a long sparse matrix with word counts is used.
+    looks like this:
+    ["',.:'", ",()=?!."]
 
-    But maybe in order to not have sparsity, we can find a better solution.
-
-    :return: numpy array
+    :param texts: The list of actual texts. 
     """
-    pass
+    punct_texts = []
+    for text in texts:
+        punct_text = ""
+        for letter in text:
+            if letter in string.punctuation:
+                punct_text += letter
+        punct_texts.append(punct_text)
+
+    return punct_texts
 
 
-def convert_sentence_lengths():
+def dist_ngrams(train_text, test_text, n=2, min_df=0.12):
     """
-    -BLOCKED-
+    Replace some characters with the * symbol.
+    Maintain only punctuation marks and diacritical characters.
+    And extract ngrams from this text.
 
-    Find a way to convert the sentence lengths of a text into a meaningful
-    numeric representation that can be used as input to the SVM.
+    :param train_text: texts for train
+    :param test_text: texts for test
+    :param n: number of ngrams, default is bigrams. If wants trigram, n=3
+    Because distortion ngrams can't fit bigram to trigram at the same time.
 
-    Maybe we can just take the sentence lengths as they are and put
-    them into a numpy array
-
-    :return: numpy array
+    :return: arrays of distortion ngrams for train_text and test_text
     """
-    pass
+    if n not in (2, 3):
+        raise ValueError("Only bigrams or trigrams available")
 
+    train_dist_text = extract_dist_ngrams(train_text)
+    test_dist_text = extract_dist_ngrams(test_text)
 
-def combine_features_per_text():
+    train_dist_text = ngrams_process(train_dist_text, n)
+    test_dist_text = ngrams_process(test_dist_text, n)
+
+    ngram_range = (n, n)
+
+    vectorizer = CountVectorizer(analyzer='char', ngram_range=ngram_range, min_df=min_df)
+
+    train_ngram = vectorizer.fit_transform(train_dist_text)
+    test_ngram = vectorizer.transform(test_dist_text)
+
+    return train_ngram.toarray(), test_ngram.toarray()
+
+def extract_dist_ngrams(texts):
     """
-    This function should combine the arrays produced by the conversion
-    functions above into one single numpy array (representing one text).
+    covert normal alphabets in the text into *
+    leave only diacritical letters and punctuations
 
-    :return: This should return a numpy array of size (1 * num_total_features)
+    :param texts: input texts
+    :return: converted text
     """
-    pass
+    acc_list = []
+    result = []
 
+    for text in texts:
+        unacc_text = unidecode.unidecode(text)
+        dist_text = text
 
-def combine_features_all_texts():
+        for char in text:
+            if char == unacc_text[text.index(char)] and char != ' ' and char not in string.punctuation:
+                dist_text = dist_text.replace(char, '*')
+            elif char != ' ':
+                acc_list.append(char)  # collect diacritical characters
+        acc_list = list(set(acc_list))
+        result.append(dist_text)
+
+    return result
+
+def ngrams_process(dist_texts,n=2):
     """
-    The function will be used twice, once for our training data and
-    once for our testing data.
+    convert more than one or two continuous asterisks into one asterisk
+    such as '***ę*******. **é***' -> '*ę*. *é*' in bigrams
+    or '***ę*******. **é***' -> '**ę**. **é**'
 
-    This function should combine all features of all texts into one
-    big numpy array of the shape:
-
-    (num_texts * num_total_features)
-
-    Also, the function should return the numpy array of candidates,
-    which will be our labels.
-    Shape should be:
-
-    (num_texts * 1)
-
-    :return: a Tuple of numpy arrays -> (features, labels)
+    :param texts: input text which has converted normal alphabets into asterisks
+    :param n: number of ngrams, default is 2. Other option is 3 for trigram
+    :return: converted text which has no more than one asterisk in the strings
     """
-    pass
+    result = []
+    for text in dist_texts:
+        if n == 2:
+            list_temp = text[0]
+            for i in range(1, len(text)):
+                if list_temp[-1] != text[i]:
+                    list_temp += text[i]
+        if n == 3:
+            list_temp = text[0:2]
+            for i in range(2,len(text)):
+                if text[i] != '*':
+                    list_temp += text[i]
+                elif list_temp[-2:] != '**':
+                    list_temp += text[i]
 
+        result.append(list_temp)
+    return result
 
 
 if __name__ == "__main__":
@@ -176,3 +224,23 @@ if __name__ == "__main__":
     print("word n_grams")
     print(wng)
     print(wng2)
+
+    # Testing for punctuation n-grams
+    train_text4 = "'Bla, bla. blub:'"
+    train_text5 = "I,am(using)many=different?punctuation!marks."
+    assert extract_punct_ngrams([train_text4, train_text5]) == ["',.:'", ",()=?!."]
+
+    test_text4 = "+,(this'is'-a test !text."
+    png = punct_ngrams([train_text4, train_text5], [test_text4], (2, 2))
+    print("punctuation n_grams")
+    print(png)
+
+    # test for distortion ngrams
+    text1 = 'afrykanerskojęzycznym. Plébiscité sur la toile. Découvrez tous les logiciels à télécharger.'
+    text2 = 'le vaccin AstraZeneca est autorisé en France, mais n\'est pas recommandé aux plus de 65 ans'
+    text3 = 'Contrairement aux deux autres vaccins déjà disponibles, ceux de Pfizer/BioNTech et Moderna, celui d\'AstraZeneca peut être stocké à long terme dans des frigos classiques, ce qui facilite son déploiement logistique.'
+    text4 = 'Pascal Soriot et Stéphane Bancel, deux Français expatriés au cœur de la course au vaccin'
+
+    print("distortion ngrams")
+    print(dist_ngrams([text1, text2], [text3, text4]))
+    print(dist_ngrams([text1, text2], [text3, text4], 3))
