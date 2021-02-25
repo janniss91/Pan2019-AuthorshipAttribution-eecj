@@ -1,6 +1,34 @@
 # Pan2019-AuthorshipAttribution-eecj
 
-*Description goes here.*
+We used the data from the PAN Shared Task 2019 to do authorship attribution with 20 different problems.  
+Five problems belonged to one of four languages (English, French, Spanish, Italian) respectively.  
+The aim was to imitate the approach of the best performing team and try to reproduce their results.  
+In the end, we used two different approaches:
+
+1. Simple SVM
+2. Ensemble SVM Setup (training per feature type) with soft voting
+
+The features used for the task were:
+
+1. Character n-grams
+2. Word n-grams
+3. Distortion n-grams
+4. punctuation n-grams
+
+## Results
+
+We trained task-wise and on all texts combined.
+
+The different tasks yielded very different results, which also applies to the original submissions to the competition. In our setup, the overall accuracy of the best approach (Soft Voting) resulted in an accuracy of 57% and an F1 score of 45%.
+We did not manage to reach the quality of the results of the team whose approach we wanted to reproduce.  
+This can have different reasons. Differences in the setup of the SVM classifiers (we used Grid Search to find the best classifier configutation) can lead to that.
+Another possibility is that the feature setup was not done in the exact same way, even though we tried remain as close to the original description as possible.
+
+Overall, the results we obtained were 13% (Accuracy) worse than those of the original best performing team.  
+A look at the performances of the other teams shows that our results are a bit below the average of all results.
+This shows that, even though we did not reach the desired results, our classifier setup was reasonable for most tasks.
+
+Our F1 score was considerably worse. It made us conclude that some of the minority classes (some authors not represented as much in the test set), obtained very bad predictions (especially in some of the tasks that got F1 scores below 20%). That would certainly be a point to improve.
 
 ## Always keep in mind!
 
@@ -78,8 +106,14 @@ The data for this project comes from the Pan Shared Task 2019 (only the Authorsh
 Link to the Shared Task: https://pan.webis.de/clef19/pan19-web/authorship-attribution.html  
 The data was downloaded from there.
 
-*An explanation of the data could go here.*
-
 ## Running
 
-*Explanation of how to run the code in this repository.*
+To regenerate the results for the base SVM classifier, run:
+
+    python3 scripts/train.py
+
+To regenerate the results for the soft voting approach, run:
+
+    python3 scripts/train_soft_voting.py
+
+Note that the running of the scripts is going to take some time (not hours but some minutes).
