@@ -35,7 +35,7 @@ def extract_word_counts(text,lemm=True,lang="english"):
     return word_count
 
 
-def char_ngrams(train_texts: List, test_texts: List, ngram_range=(3, 3), min_df=0.12):
+def char_ngrams(train_texts: List, test_texts: List, ngram_range=(2, 5), min_df=0.12):
     """
     This funciton returns char-ngrams feature in arrays
     train_text : The text used for training
